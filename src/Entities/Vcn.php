@@ -4,13 +4,75 @@
 namespace Bee2Pay\Entities;
 
 
+use Bee2Pay\Enum\VcnOutput;
+
+/**
+ * Class Vcn
+ * @package Bee2Pay\Entities
+ */
 class Vcn
 {
+    /**
+     * @var string
+     */
     public $output;
+    /**
+     * @var Price
+     */
     public $total;
+    /**
+     * @var string
+     */
     public $activationDate;
+    /**
+     * @var string
+     */
     public $expirationDate;
+    /**
+     * @var string
+     */
     public $description;
+
+    /**
+     * Vcn constructor.
+     */
+    public function __construct()
+    {
+        $this->setTotal(new Price());
+        $this->setOutput(VcnOutput::TOKEN_OUTPUT);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getValue()
+    {
+        return $this->total->value;
+    }
+
+    /**
+     * @param mixed
+     * $this->total->value
+     */
+    public function setValue($value)
+    {
+        $this->total->value = $value;
+    }
+
+
+    public function getCurrency()
+    {
+        return $this->total->currency;
+    }
+
+    /**
+     * @param mixed
+     * $this->total->value
+     */
+    public function setCurrency($currency)
+    {
+        $this->total->currency = $currency;
+    }
 
     /**
      * @return mixed

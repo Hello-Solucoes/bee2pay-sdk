@@ -4,23 +4,75 @@
 namespace Bee2Pay\Entities;
 
 
+/**
+ * Class Service
+ * @package Bee2Pay\Entities
+ */
 class Service
 {
+    /**
+     * @var string
+     */
     public $productId;
+    /**
+     * @var string
+     */
     public $productName;
+    /**
+     * @var string
+     */
     public $startDate;
+    /**
+     * @var string
+     */
     public $endDate;
+    /**
+     * @var string
+     */
     public $penaltyDate;
+    /**
+     * @var string
+     */
     public $cityName;
+    /**
+     * @var string
+     */
     public $countryCode;
+    /**
+     * @var string
+     */
     public $roomType;
+    /**
+     * @var string
+     */
     public $costCenterCode;
+    /**
+     * @var string
+     */
     public $costCenterDescription;
+    /**
+     * @var string
+     */
     public $companyCode;
+    /**
+     * @var string
+     */
     public $companyName;
+    /**
+     * @var string
+     */
     public $ledgerAccountCode;
+    /**
+     * @var string
+     */
     public $ledgerAccountDescription;
+    /**
+     * @var string
+     */
     public $projectCode;
+    /**
+     * @var string
+     */
     public $projectDescription;
 
     /**

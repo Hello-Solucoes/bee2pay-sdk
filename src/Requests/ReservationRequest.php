@@ -4,16 +4,58 @@
 namespace Bee2Pay\Requests;
 
 
+use Bee2Pay\Entities\Service;
+use Bee2Pay\Entities\Traveller;
+use Bee2Pay\Entities\Vcn;
+
+/**
+ * Class ReservationRequest
+ * @package Bee2Pay\Requests
+ */
 class ReservationRequest
 {
+    /**
+     * @var string
+     */
     public $locator;
+    /**
+     * @var string
+     */
     public $refCode;
+    /**
+     * @var array
+     */
     public $tags;
+    /**
+     * @var string
+     */
     public $createdBy;
+    /**
+     * @var string
+     */
     public $createdByName;
+    /**
+     * @var Vcn
+     */
     public $vcn;
+    /**
+     * @var Traveller
+     */
     public $traveller;
+    /**
+     * @var Service
+     */
     public $service;
+
+    /**
+     * ReservationRequest constructor.
+     */
+    public function __construct()
+    {
+        $this->setVcn(new Vcn());
+        $this->setService(new Service());
+        $this->setTraveller(new Traveller());
+    }
 
     /**
      * @return mixed

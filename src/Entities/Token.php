@@ -4,13 +4,24 @@
 namespace Bee2Pay\Entities;
 
 
+/**
+ * Class Token
+ * @package Bee2Pay\Entities
+ */
 class Token
 {
+    /**
+     * @var
+     */
     public $token;
 
+    /**
+     * Token constructor.
+     * @param null $token
+     */
     public function __construct($token = null)
     {
-        if($token){
+        if ($token) {
             $this->setToken($token);
         }
     }

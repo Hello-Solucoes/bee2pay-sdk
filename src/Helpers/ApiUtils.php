@@ -41,7 +41,7 @@ class ApiUtils
         return $object;
     }
 
-    public static function parseJsonResponsetoClass($jsonResponse, $class){
+    public static function parseJsonResponseToClass($jsonResponse, $class){
         if(!class_exists($class, false)){
             return;
         }
