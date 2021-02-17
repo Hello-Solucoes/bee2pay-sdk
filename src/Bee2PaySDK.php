@@ -27,7 +27,7 @@ class Bee2PaySDK
         return $this->vcnService->createReservation($request);
 
     }
-z
+
     public function cancelByReservationId($reservationId)
     {
         return $this->vcnService->cancelByReservationId($reservationId);
