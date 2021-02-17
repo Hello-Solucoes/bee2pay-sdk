@@ -1,5 +1,5 @@
-# BEE2PAY VCN SDK - Niara
-SDK para utilização da API do Bee2Pay VCN, segundo a [Documentação](http://Bee2Pay-api-docs.Bee2Pay.tech/) do release  0.5.3 
+# Bee2Pay VCN SDK - Niara
+SDK para utilização da API do Bee2Pay VCN, segundo a [Documentação](http://niara-api-docs.Bee2Pay.tech/) do release  0.5.3 
 
 
 ## Instanciando a classe
