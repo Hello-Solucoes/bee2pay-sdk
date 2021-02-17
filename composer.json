@@ -1,0 +1,24 @@
+{
+  "name": "hello-solucoes/bee2pay-sdk",
+  "description": "SDK para integrar com o VCN da Bee2Pay",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "Bee2Pay\\": "src/"
+    }
+  },
+  "require": {
+    "guzzlehttp/guzzle": "^7.2",
+    "ext-json": "*"
+  },
+  "require-dev": {
+    "phpunit/php-timer": "^2.1"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Kaio Valdemar",
+      "email": "profkaio@outlook.com"
+    }
+  ]
+}
