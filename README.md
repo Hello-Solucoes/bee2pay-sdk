@@ -24,7 +24,9 @@ Opcionalmente no VCN é possivel escolher o tipo de OUTPUT entre 'DEFAULT' e 'TO
 * `TOKEN`: Retorna um token no lugar do cartão, o mesmo pode ser usado para consultar os dados do VCN sempre que necessário 
 
 Exemplo:
-#####Request
+
+##### Request
+
 ```php
 $request = new \Bee2Pay\Requests\ReservationRequest();
 
@@ -44,7 +46,7 @@ $vcn->setOutput('TOKEN');
 
 // Service
 $service = new \Bee2Pay\Entities\Service();
-$service->setProductId('HOTEL_EHTL_1054');
+$service->setProductId('HOTEL_TESTE_1054');
 $service->setProductName('Teste Teste');
 $service->setStartDate('2021-12-10');
 $service->setEndDate('2021-12-11');
