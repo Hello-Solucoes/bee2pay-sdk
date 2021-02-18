@@ -1,5 +1,5 @@
 # Bee2Pay VCN SDK - Niara
-SDK para utilização da API do Bee2Pay VCN, segundo a [Documentação](http://niara-api-docs.Bee2Pay.tech/) do release  0.5.3 
+SDK para utilização da API do Bee2Pay VCN, segundo a [Documentação](http://niara-api-docs.niara.tech/) do release  0.5.3 
 
 
 ## Instanciando a classe
@@ -12,7 +12,6 @@ Ao instanciar a classe é necessário informar o TOKEN de acesso
 Caso deseje utilizar o ambiente de desekvilvimento, basta passar um booleano `false` ao instanciar a Classe
 
  ```php
-
     $sdk = new Bee2Pay\Bee2PaySDK('YOUR_TOKEN', false); // Dev
 ```
 
@@ -157,5 +156,48 @@ O método `cancelByReservationId()` exclui as informações relacionadas ao VCN
 ```
 
 
+## Criando um VCN para Extras
+
+##### Request
+```php
+$request = new \Bee2Pay\Entities\Vcn();
+$request->setValue(10);
+$request->setCurrency('BRL');
+$request->setActivationDate('2021-12-12');
+$request->setExpirationDate('2021-12-13');
+$request->setDescription('Teste de Extras');
+
+
+$sdk->newExtrasVcn('AAAAA4B',$request);
+```
+
+## Excluindo um VCN para Extras
+
+##### Request
+```php
+$sdk->cancelExtrasVcn('ReservationIDxxxxx', 'VcnIDxxxxxxx');
+```
+
+
+## Consultando informações do VCN de Extras
+Utilizando o numero da reserva, o id do Vcn e o token é possivel consultar os dados do cartão
+
+##### Request
+```php
+$sdk->getExtrasVcn('ReservationIDxxxxx', 'VcnIDxxxxxxx', 'CreditCardTokenxxxxxxxx');
+```
+
+##### Response
+```json
+{
+    "creditCard": {
+            "cardTypeCode": " MASTERCARD",
+            "expireDate": " 0822",
+            "cardHolderName": " Teste Teste",
+            "cardNumber": " 0000000000002012",
+            "cvv": "000"
+    }
+}
+```
 
 ![](assets/bee2pay.png)

@@ -8,11 +8,10 @@
     }
   },
   "require": {
-    "guzzlehttp/guzzle": "^7.2",
+    "guzzlehttp/guzzle": "^6.2",
     "ext-json": "*"
   },
   "require-dev": {
-    "phpunit/php-timer": "^2.1"
   },
   "license": "MIT",
   "authors": [

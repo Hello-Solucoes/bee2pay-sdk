@@ -46,6 +46,9 @@ class ApiUtils
             return;
         }
 
+        $object = new $class();
+        $vars = get_object_vars($object);
+
 
     }
 

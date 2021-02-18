@@ -6,7 +6,7 @@ namespace Bee2Pay;
 
 use Bee2Pay\Entities\Token;
 use Bee2Pay\Requests\ReservationRequest;
-use Bee2Pay\Services\VCNService;
+use Bee2Pay\Services\ReservationService;
 
 class Bee2PaySDK
 {
@@ -14,7 +14,7 @@ class Bee2PaySDK
 
     public function __construct($token, $production = true)
     {
-        $this->vcnService = new VCNService($token, $production);
+        $this->vcnService = new ReservationService($token, $production);
     }
 
     public function test()

@@ -12,7 +12,7 @@ use Bee2Pay\Entities\Vcn;
 use Bee2Pay\Helpers\ApiUtils;
 use Bee2Pay\Requests\ReservationRequest;
 
-class VCNService
+class ReservationService
 {
     private $api;
 
@@ -49,6 +49,7 @@ class VCNService
 
     public function createReservation(ReservationRequest $request)
     {
+
         return $this->sendRequest(Methods::POST, Endpoints::RESERVATIONS_ENDPOINT, ApiUtils::encodeRequest($request));
     }
 
