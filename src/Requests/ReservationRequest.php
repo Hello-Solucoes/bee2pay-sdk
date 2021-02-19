@@ -4,9 +4,9 @@
 namespace Bee2Pay\Requests;
 
 
-use Bee2Pay\Entities\Service;
-use Bee2Pay\Entities\Traveller;
-use Bee2Pay\Entities\Vcn;
+use Bee2Pay\Entities\Reservation\Service;
+use Bee2Pay\Entities\Reservation\Traveller;
+use Bee2Pay\Entities\Reservation\Vcn;
 
 /**
  * Class ReservationRequest

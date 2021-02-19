@@ -4,7 +4,7 @@
 namespace Bee2Pay\Helpers;
 
 
-class Utils
+class ValidatorHelper
 {
 
 }

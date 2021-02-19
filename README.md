@@ -160,7 +160,7 @@ O método `cancelByReservationId()` exclui as informações relacionadas ao VCN
 
 ##### Request
 ```php
-$request = new \Bee2Pay\Entities\Vcn();
+$request = new \Bee2Pay\Entities\Reservation\Vcn();
 $request->setValue(10);
 $request->setCurrency('BRL');
 $request->setActivationDate('2021-12-12');

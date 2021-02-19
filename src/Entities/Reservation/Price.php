@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Bee2Pay\Entities;
+namespace Bee2Pay\Entities\Reservation;
 
 
 class Price

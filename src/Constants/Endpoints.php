@@ -13,4 +13,5 @@ class Endpoints
     const RESERVATIONS_ENDPOINT = '/hotels/reservations';
     const VCN_ENDPOINT = '/vcn';
     const EXTRAS_VCN_ENDPOINT = '/extras/vcns';
+    const LOST_RESERVATIONS = '/lostReservations';
 }

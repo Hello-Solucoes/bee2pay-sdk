@@ -1,12 +1,12 @@
 <?php
 
 
-namespace Bee2Pay\Entities;
+namespace Bee2Pay\Entities\Reservation;
 
 
 /**
  * Class Service
- * @package Bee2Pay\Entities
+ * @package Bee2Pay\Entities\ValidBooking
  */
 class Service
 {

@@ -7,8 +7,8 @@ namespace Bee2Pay\Services;
 use Bee2Pay\Api\ApiClient;
 use Bee2Pay\Constants\Endpoints;
 use Bee2Pay\Constants\Methods;
-use Bee2Pay\Entities\Token;
-use Bee2Pay\Entities\Vcn;
+use Bee2Pay\Entities\Reservation\Token;
+use Bee2Pay\Entities\Reservation\Vcn;
 use Bee2Pay\Helpers\ApiUtils;
 use Bee2Pay\Requests\ReservationRequest;
 

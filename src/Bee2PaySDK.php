@@ -4,7 +4,7 @@
 namespace Bee2Pay;
 
 
-use Bee2Pay\Entities\Token;
+use Bee2Pay\Entities\Reservation\Token;
 use Bee2Pay\Requests\ReservationRequest;
 use Bee2Pay\Services\ReservationService;
 
