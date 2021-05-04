@@ -8,7 +8,7 @@ use Bee2Pay\Entities\Reservation\Token;
 use Bee2Pay\Requests\ReservationRequest;
 use Bee2Pay\Services\ReservationService;
 
-class Bee2PaySDK
+class ReservationSDK
 {
     private $vcnService;
 
@@ -21,6 +21,7 @@ class Bee2PaySDK
     {
         return $this->vcnService->test();
     }
+
 
     public function create(ReservationRequest $request)
     {
@@ -47,26 +48,37 @@ class Bee2PaySDK
 
     public function getVcnByToken($reservationId, $token)
     {
-        if(!$token instanceof Token){
+        if (!$token instanceof Token) {
             $token = new Token($token);
         }
         return $this->vcnService->getVcnByToken($reservationId, $token);
 
     }
 
+    /*
+     *  @deprecated
+     */
     public function newExtrasVcn($reservationId, $vcn)
     {
         return $this->vcnService->newExtrasVcn($reservationId, $vcn);
 
     }
+
+    /*
+     *  @deprecated
+     */
     public function cancelExtrasVcn($reservationId, $vcnId)
     {
         return $this->vcnService->cancelVcnExtra($reservationId, $vcnId);
 
     }
+
+    /*
+     *  @deprecated
+     */
     public function getExtrasVcn($reservationId, $vcnId, $token)
     {
-        return $this->vcnService->getExtrasVcn($reservationId,$vcnId,$token);
+        return $this->vcnService->getExtrasVcn($reservationId, $vcnId, $token);
 
     }
 }

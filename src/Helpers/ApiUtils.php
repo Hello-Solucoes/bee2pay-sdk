@@ -13,6 +13,11 @@ class ApiUtils
         return Endpoints::RESERVATIONS_ENDPOINT . self::forwardSlash($reservationId);
     }
 
+    public static function getVcnEndpoint($reservationId)
+    {
+        return Endpoints::VCN_ENDPOINT . self::forwardSlash($reservationId);
+    }
+
     public static function getReservationVcnEndpoint($reservationId)
     {
         return Endpoints::RESERVATIONS_ENDPOINT . self::forwardSlash($reservationId) . Endpoints::VCN_ENDPOINT;

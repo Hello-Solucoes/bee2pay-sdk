@@ -1,9 +1,9 @@
 <?php
 
-
 namespace Bee2Pay\Entities\BookingTypes;
 
 
+use Bee2Pay\Constants\BookingType;
 use Bee2Pay\Contracts\ValidBooking;
 
 class HotelBooking implements ValidBooking
@@ -42,6 +42,11 @@ class HotelBooking implements ValidBooking
     public $hotelCustomField4;
     public $hotelCustomField5;
 
+
+    public function getType()
+    {
+        return BookingType::HOTEL;
+    }
     /**
      * @return mixed
      */

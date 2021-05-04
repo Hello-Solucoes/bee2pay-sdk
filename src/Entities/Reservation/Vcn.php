@@ -7,7 +7,7 @@ namespace Bee2Pay\Entities\Reservation;
 use Bee2Pay\Enum\VcnOutput;
 
 /**
- * Class Vcn
+ * Class VirtualCard
  * @package Bee2Pay\Entities\ValidBooking
  */
 class Vcn
@@ -34,7 +34,7 @@ class Vcn
     public $description;
 
     /**
-     * Vcn constructor.
+     * VirtualCard constructor.
      */
     public function __construct()
     {

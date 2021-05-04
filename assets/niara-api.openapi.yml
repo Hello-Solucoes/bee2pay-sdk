@@ -1,0 +1,2082 @@
+openapi: 3.0.0
+info:
+  version: 0.6.1
+  title: Niara API
+  description: >-
+    ## Autenticação
+
+
+    Cada requisição à API precisa incluir um token de autenticação fornecido pela equipe da Niara. O token
+
+    está associado a um cliente cadastrado no sistema Niara.
+
+
+    O cliente precisa incluir este token no cabeçalho `Authorization` ao fazer requisições para a API:
+
+
+    ```
+
+    Authorization: Bearer <token>
+
+    ```
+
+
+    O token segue o formato [JSON Web Token (JWT)](https://tools.ietf.org/html/rfc7519) e seu tamanho é 
+
+    variável (entre 640 e 2.000 caracteres).
+
+
+    ## Exemplos
+
+
+    Exemplo de chamada à API usando curl:
+
+
+    ```
+
+    curl -X POST https://api.niara.tech/prod/test -H accept: application/json -H Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyXXXX
+
+    ```
+
+
+    ## Links e arquivos
+
+
+    - [Arquivo OpenAPI com estas definições](http://niara-api-docs.niara.tech/static/niara-api.openapi.yml)
+
+    - [Download do Postman](https://www.getpostman.com/downloads/)
+
+    - [Importando arquivos OpenAPI no Postman](https://learning.getpostman.com/docs/postman/collections/data_formats/#importing-openapi)
+servers:
+  - url: https://api.niara.tech/prod
+    description: Ambiente de produção
+tags:
+  - name: vcn
+    description: VCN
+  - name: hotelreservations
+    description: Reservas de hotéis
+  - name: lostReservations
+    description: Reservas perdidas
+  - name: auth
+    description: Autenticação
+paths:
+  /test:
+    post:
+      tags:
+        - auth
+      summary: Teste de autenticação
+      operationId: test
+      description: >
+        Não faz nenhuma operação. Retorna os ids da credencial, se ela estiver
+        válida.
+      responses:
+        "200":
+          description: Validação da credencial bem sucedida
+          content:
+            application/json:
+              schema:
+                properties:
+                  tenantId:
+                    type: string
+                    example: us-east-1:00000000-0000-0000-0000-000000000002
+                  clientId:
+                    type: string
+                    example: 00000000-0000-0000-0000-000000000002
+                  clientName:
+                    type: string
+                    example: Empresa Padrão
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+  /vcn:
+    post:
+      tags:
+        - vcn
+      summary: Gerar VCN
+      operationId: createVCN
+      description: >
+        Gera um número de cartão de crédito virtual (VCN). Os dados do VCN são
+        incluídos no corpo da resposta por padrão, mas é possível solicitar a
+        geração de um token, que será necessário para restaurar os dados do
+        cartão no momento da cobrança.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVCNRequest"
+      responses:
+        "200":
+          description: VCN gerado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateVCNResponse"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          description: Erro geral. Pode ser erro de configuração de VCN, erro de
+            comunicação com servidores externos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                wrongCredentials:
+                  summary: Erro de senha ou usuário no cadastro da credencial do VCN
+                  value:
+                    message: "VCN: Cartão não gerado - A SENHA DO CONVÊNIO É INVÁLIDA"
+                errorWithVcnProvider:
+                  summary: "Erro durante a geração do VCN (ex: serviço fora do ar, URL inválida)"
+                  value:
+                    message: "VCN: Cartão não gerado - Erro inesperado."
+                errorWithVcnUDF:
+                  summary: Erro de configuração da credencial VCN - exemplo, faltou configurar
+                    Ativação e Expiração
+                  value:
+                    message: "VCN: Configuração inválida"
+  "/vcn/{vcnId}":
+    delete:
+      tags:
+        - vcn
+      summary: Cancela um VCN
+      operationId: cancelVCN
+      parameters:
+        - name: vcnId
+          in: path
+          description: Id do VCN
+          required: true
+          schema:
+            type: string
+          example: BAGABAG
+      responses:
+        "200":
+          description: VCN cancelado com sucesso (ou já estava cancelado)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelVCNResponse"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          description: Reserva não encontrada ou VCN não encontrado.
+        "500":
+          $ref: "#/components/responses/500"
+    patch:
+      tags:
+        - vcn
+      summary: Atualiza informações do VCN
+      operationId: updateVCN
+      parameters:
+        - name: vcnId
+          in: path
+          description: Id do VCN
+          required: true
+          schema:
+            type: string
+          example: BAGABAG
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVCNRequest"
+      responses:
+        "200":
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateVCNResponse"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          description: Reserva não encontrada ou VCN não encontrado.
+        "500":
+          $ref: "#/components/responses/500"
+  /lostReservations:
+    post:
+      tags:
+        - lostReservations
+      summary: Gravar reserva perdida
+      operationId: receiveLostReservation
+      description: |
+        Armazena uma reserva perdida        
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReceiveLostReservationRequest"
+      responses:
+        "200":
+          description: Operação realizada com sucesso
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+  /hotels/reservations:
+    post:
+      tags:
+        - hotelreservations
+      summary: Cadastrar reserva de hotel e gerar VCN
+      operationId: createHotelReservation
+      description: >
+        Cadastra uma reserva de hotel e gera um cartão de crédito virtual (VCN).
+        Os dados do VCN são incluídos no corpo da resposta por padrão, mas é
+        possível solicitar a geração de um token, que será necessário para
+        restaurar os dados do cartão no momento da cobrança.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Reservation"
+            examples:
+              example1:
+                summary: Exemplo com geração de token para o VCN
+                value:
+                  locator: RES0123456-10
+                  refCode: ABCD1234
+                  tags:
+                    - CC1020
+                  createdBy: john.smith
+                  createdByName: John Smith
+                  vcn:
+                    total:
+                      value: 1.99
+                      currency: BRL
+                    output: TOKEN
+                  traveller:
+                    firstName: Frank
+                    lastName: Castle
+                    email: fcastle@example.com
+                    rg: 55.555.555-5
+                    cpf: 555.555.555-55
+                    department: RH
+                    registration: "54321"
+                  service:
+                    productId: HOTEL_OMNI_1054
+                    productName: Blue Tree Premium Morumbi
+                    startDate: 2019-11-14
+                    endDate: 2019-11-15
+                    penaltyDate: 2019-11-13
+                    cityName: São Paulo
+                    countryCode: BR
+                    roomType: Single
+                    costCenterCode: "1030"
+                    costCenterDescription: Inovação
+                    companyCode: "206077"
+                    companyName: CompanyABC
+                    ledgerAccountCode: "40901"
+                    ledgerAccountDescription: Investimentos
+                    projectCode: "358"
+                    projectDescription: NewProdXYZ
+              example2:
+                summary: Exemplo que retorna os dados do cartão de crédito
+                value:
+                  locator: RES0123456-10
+                  refCode: ABCD1234
+                  tags:
+                    - CC1020
+                  createdBy: john.smith
+                  createdByName: John Smith
+                  vcn:
+                    total:
+                      value: 1.99
+                      currency: BRL
+                  traveller:
+                    firstName: Frank
+                    lastName: Castle
+                    email: fcastle@example.com
+                    rg: 55.555.555-5
+                    cpf: 555.555.555-55
+                    department: RH
+                    registration: "54321"
+                  service:
+                    productId: HOTEL_OMNI_1054
+                    productName: Blue Tree Premium Morumbi
+                    startDate: 2019-11-14
+                    endDate: 2019-11-15
+                    penaltyDate: 2019-11-13
+                    cityName: São Paulo
+                    countryCode: BR
+                    roomType: Single
+                    costCenterCode: "1030"
+                    costCenterDescription: Inovação
+                    companyCode: "206077"
+                    companyName: CompanyABC
+                    ledgerAccountCode: "40901"
+                    ledgerAccountDescription: Investimentos
+                    projectCode: "358"
+                    projectDescription: NewProdXYZ
+              example3:
+                summary: Exemplo sem código de reserva de origem que retorna os dados do cartão
+                  de crédito
+                value:
+                  vcn:
+                    total:
+                      value: 1.99
+                      currency: BRL
+                  traveller:
+                    firstName: Frank
+                    lastName: Castle
+                  service:
+                    productId: HOTEL_OMNI_1054
+                    productName: Blue Tree Premium Morumbi
+                    startDate: 2019-11-14
+                    endDate: 2019-11-15
+                    penaltyDate: 2019-11-13
+                    cityName: São Paulo
+                    countryCode: BR
+      responses:
+        "200":
+          description: Reserva cadastrada com sucesso
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ReservationResponse"
+                  - $ref: "#/components/schemas/ReservationWithCreditCardResponse"
+                  - $ref: "#/components/schemas/ReservationWithCreditCardTokenResponse"
+              examples:
+                exampleToken:
+                  summary: Resposta com token do VCN
+                  value:
+                    reservationId: BTGBZZP
+                    locator: RES0123456-10
+                    status: CONFIRMED
+                    refCode: ABCDE
+                    creditCard:
+                      token: KN7e2m4TFWtPEHjuhcKwRXqIQyUigWliof0bhuAzAF8v75VYBL3kySRQsFX4CT5aGbgNXgrLdXildPR+cpToiKWvQcMiMRk+AaRyzYIO8FbxDJDLsGUlfY5+EY3ynItvONmOxqS0zPrhK1FM24ahWt32MNymWHcWXjTU5dfRcVLrLavYSRxfg0JKfOFqBE49
+                    service:
+                      productId: HOTEL_OMNI_1054
+                      productName: Blue Tree Premium Morumbi
+                      startDate: 2019-11-14
+                      endDate: 2019-11-15
+                      penaltyDate: 2019-11-13
+                      cityName: São Paulo
+                      countryCode: BR
+                exampleCreditCard:
+                  summary: Resposta com o número do cartão de crédito do VCN
+                  value:
+                    reservationId: BTGBZZP
+                    locator: RES0123456-10
+                    status: CONFIRMED
+                    refCode: ABCDE
+                    creditCard:
+                      cardTypeCode: MASTERCARD
+                      expireDate: "0820"
+                      cardHolderName: Frank Castle
+                      cardNumber: "42424242908904"
+                      cvv: "012"
+                    service:
+                      productId: HOTEL_OMNI_1054
+                      productName: Blue Tree Premium Morumbi
+                      startDate: 2019-11-14
+                      endDate: 2019-11-15
+                      penaltyDate: 2019-11-13
+                      cityName: São Paulo
+                      countryCode: BR
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          description: Erro geral. Pode ser erro de configuração de VCN, erro de
+            comunicação com servidores externos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                wrongCredentials:
+                  summary: Erro de senha ou usuário no cadastro da credencial do VCN
+                  value:
+                    message: "VCN: Cartão não gerado - A SENHA DO CONVÊNIO É INVÁLIDA"
+                errorWithVcnProvider:
+                  summary: "Erro durante a geração do VCN (ex: serviço fora do ar, URL inválida)"
+                  value:
+                    message: "VCN: Cartão não gerado - Erro inesperado."
+                errorWithVcnUDF:
+                  summary: Erro de configuração da credencial VCN - exemplo, faltou configurar
+                    Ativação e Expiração
+                  value:
+                    message: "VCN: Configuração inválida"
+  "/hotels/reservations/{reservationId}":
+    get:
+      tags:
+        - hotelreservations
+      summary: Consultar dados da reserva
+      operationId: getHotelReservation
+      description: |
+        Consulta detalhes de reserva previamente cadastrada
+      parameters:
+        - name: reservationId
+          in: path
+          description: Id da reserva
+          required: true
+          schema:
+            type: string
+          example: BTGBZZP
+      responses:
+        "200":
+          description: Dados da reserva de hotel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationResponse"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          description: Reserva não encontrada.
+        "500":
+          $ref: "#/components/responses/500"
+    patch:
+      tags:
+        - hotelreservations
+      summary: Atualizar dados da reserva
+      operationId: patchHotelReservation
+      description: |
+        Atualiza campos de uma reserva criada anteriormente.
+      parameters:
+        - name: reservationId
+          in: path
+          description: Id da reserva
+          required: true
+          schema:
+            type: string
+          example: BTGBZZP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Reservation"
+            examples:
+              example1:
+                summary: Atualizar apenas o campo locator
+                value:
+                  locator: RES0123456-10
+              example2:
+                summary: Atualizar o valor do vcn
+                value:
+                  vcn:
+                    total:
+                      value: 2.99
+                      currency: BRL
+              example3:
+                summary: Atualizar as datas da reserva
+                value:
+                  service:
+                    startDate: 2019-11-14
+                    endDate: 2019-11-15
+                    penaltyDate: 2019-11-13
+              example4:
+                summary: Atualizar todos os campos
+                value:
+                  locator: RES0123456-10
+                  refCode: ABCD1234
+                  tags:
+                    - CC1020
+                  createdBy: john.smith
+                  createdByName: John Smith
+                  vcn:
+                    total:
+                      value: 1.99
+                      currency: BRL
+                  traveller:
+                    firstName: Frank
+                    lastName: Castle
+                    email: fcastle@example.com
+                    rg: 55.555.555-5
+                    cpf: 555.555.555-55
+                    department: RH
+                    registration: "54321"
+                  service:
+                    productId: HOTEL_OMNI_1054
+                    productName: Blue Tree Premium Morumbi
+                    startDate: 2019-11-14
+                    endDate: 2019-11-15
+                    penaltyDate: 2019-11-13
+                    cityName: São Paulo
+                    countryCode: BR
+                    roomType: Single
+                    costCenterCode: "1030"
+                    costCenterDescription: Inovação
+                    companyCode: "206077"
+                    companyName: CompanyABC
+                    ledgerAccountCode: "40901"
+                    ledgerAccountDescription: Investimentos
+                    projectCode: "358"
+                    projectDescription: NewProdXYZ
+      responses:
+        "200":
+          description: Reserva atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationResponse"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          description: Reserva não encontrada.
+        "500":
+          $ref: "#/components/responses/500"
+    delete:
+      tags:
+        - hotelreservations
+      summary: Cancelar reserva
+      operationId: deleteHotelReservation
+      parameters:
+        - name: reservationId
+          in: path
+          description: Id da reserva
+          required: true
+          schema:
+            type: string
+          example: BTGBZZP
+      responses:
+        "200":
+          description: Reserva cancelada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationResponse"
+              example:
+                reservationId: BTGBZZP
+                locator: RES0123456-10
+                refCode: 12f031-c93480a-ckdsj49102
+                status: CANCELLED
+                service:
+                  productId: HOTEL_OMNI_1054
+                  productName: Blue Tree Premium Morumbi
+                  cityName: São Paulo
+                  startDate: 2019-05-14
+                  endDate: 2019-05-14
+                  penaltyDate: 2019-05-14
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          description: Reserva não encontrada.
+        "500":
+          $ref: "#/components/responses/500"
+  "/hotels/reservations/{reservationId}/vcn":
+    post:
+      tags:
+        - hotelreservations
+      summary: Recupera os detalhes do vcn a partir de token
+      description: |
+        Reconstrói os detalhes do cartão de crédito virtual gerado pela reserva.
+      operationId: getHotelReservationVCN
+      parameters:
+        - name: reservationId
+          in: path
+          description: Id da reserva
+          required: true
+          schema:
+            type: string
+          example: BTGBZZP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  example: KN7e2m4TFWtPEHjuhcKwRXqIQyUigWliof0bhuAzAF8v75VYBL3kySRQsFX4CT5aGbgNXgrLdXildPR+cpToiKWvQcMiMRk+AaRyzYIO8FbxDJDLsGUlfY5+EY3ynItvONmOxqS0zPrhK1FM24ahWt32MNymWHcWXjTU5dfRcVLrLavYSRxfg0JKfOFqBE49
+      responses:
+        "200":
+          description: Dados do VCN recuperados com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithCreditCard"
+              examples:
+                example1:
+                  value:
+                    creditCard:
+                      cardTypeCode: MASTERCARD
+                      expireDate: "0820"
+                      cardHolderName: Frank Castle
+                      cardNumber: "42424242908904"
+                      cvv: "012"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          description: Reserva não encontrada.
+        "500":
+          $ref: "#/components/responses/500"
+  "/hotels/reservations/{reservationId}/extras/vcns":
+    post:
+      tags:
+        - hotelreservations
+      summary: Cria um vcn para o pagamento de extras de uma reserva de hotel
+      description: >
+        Cria um vcn para o pagamento de extras de uma reserva de hotel. É
+        possível escolher entre o retorno imediato dos dados do cartão de
+        crédito ou o retorno de um token criptografado.
+      operationId: createHotelReservationExtraVcn
+      parameters:
+        - name: reservationId
+          in: path
+          description: Id da reserva
+          required: true
+          schema:
+            type: string
+          example: BTGBZZP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtraVcnRequest"
+            examples:
+              example1:
+                summary: Solicitação de novo VCN, com retorno na forma de token
+                value:
+                  total:
+                    value: 1.99
+                    currency: BRL
+                  output: TOKEN
+                  activationDate: 2020-05-16
+                  expirationDate: 2020-06-16
+                  description: Pay extras with this vcn
+              example2:
+                summary: Solicitação de novo VCN, com retorno dos dados
+                value:
+                  total:
+                    value: 1.99
+                    currency: BRL
+                  output: DEFAULT
+                  activationDate: 2020-05-16
+                  expirationDate: 2020-06-16
+                  description: Pay extras with this vcn
+      responses:
+        "200":
+          description: Dados do VCN recuperados com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - oneOf:
+                      - $ref: "#/components/schemas/WithCreditCard"
+                      - $ref: "#/components/schemas/WithCreditCardToken"
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        example: BAGABAG
+                        description: Identificador do VCN. Utilizado para recuperar os dados do VCN a
+                          partir de Token e cancelamento do VCN.
+                      status:
+                        type: string
+                        description: Status do VCN
+                      description:
+                        type: string
+                        description: Descrição do VCN
+              examples:
+                example1:
+                  summary: Retorno de token criptografado
+                  value:
+                    id: BAGABAG
+                    description: Pay extras with this vcn
+                    status: VALID
+                    creditCard:
+                      token: KN7e2m4TFWtPEHjuhcKwRXqIQyUigWliof0bhuAzAF8v75VYBL3kySRQsFX4CT5aGbgNXgrLdXildPR+cpToiKWvQcMiMRk+AaRyzYIO8FbxDJDLsGUlfY5+EY3ynItvONmOxqS0zPrhK1FM24ahWt32MNymWHcWXjTU5dfRcVLrLavYSRxfg0JKfOFqBE49
+                example2:
+                  summary: Retorno dos dados do cartão
+                  value:
+                    id: BAGABAG
+                    description: Pay extras with this vcn
+                    status: VALID
+                    creditCard:
+                      cardTypeCode: MASTERCARD
+                      expireDate: "0820"
+                      cardHolderName: Frank Castle
+                      cardNumber: "42424242908904"
+                      cvv: "012"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          description: Reserva não encontrada.
+        "500":
+          $ref: "#/components/responses/500"
+  "/hotels/reservations/{reservationId}/extras/vcns/{vcnId}":
+    delete:
+      tags:
+        - hotelreservations
+      summary: Cancela um VCN de extra
+      operationId: cancelHotelReservationExtraVcn
+      parameters:
+        - name: reservationId
+          in: path
+          description: Id da reserva
+          required: true
+          schema:
+            type: string
+          example: BTGBZZP
+        - name: vcnId
+          in: path
+          description: Id do VCN
+          required: true
+          schema:
+            type: string
+          example: BAGABAG
+      responses:
+        "200":
+          description: VCN cancelado com sucesso (ou já estava cancelado)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: BAGABAG
+                    description: Identificador do VCN. Utilizado para recuperar os dados do VCN a
+                      partir de Token e cancelamento do VCN.
+                  status:
+                    type: string
+                    description: Status do VCN
+                  description:
+                    type: string
+                    description: Descrição do VCN
+              examples:
+                example1:
+                  value:
+                    id: BAGABAG
+                    description: Pay extras with this vcn
+                    status: CANCELLED
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          description: Reserva não encontrada ou VCN não encontrado.
+        "500":
+          $ref: "#/components/responses/500"
+    post:
+      tags:
+        - hotelreservations
+      summary: Recupera os dados do VCN a partir de token
+      operationId: retrieveHotelReservationExtraVcn
+      parameters:
+        - name: reservationId
+          in: path
+          description: Id da reserva
+          required: true
+          schema:
+            type: string
+          example: BTGBZZP
+        - name: vcnId
+          in: path
+          description: Id do VCN
+          required: true
+          schema:
+            type: string
+          example: BAGABAG
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  example: KN7e2m4TFWtPEHjuhcKwRXqIQyUigWliof0bhuAzAF8v75VYBL3kySRQsFX4CT5aGbgNXgrLdXildPR+cpToiKWvQcMiMRk+AaRyzYIO8FbxDJDLsGUlfY5+EY3ynItvONmOxqS0zPrhK1FM24ahWt32MNymWHcWXjTU5dfRcVLrLavYSRxfg0JKfOFqBE49
+      responses:
+        "200":
+          description: Dados do VCN recuperados com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithCreditCard"
+              examples:
+                example1:
+                  value:
+                    creditCard:
+                      cardTypeCode: MASTERCARD
+                      expireDate: "0820"
+                      cardHolderName: Frank Castle
+                      cardNumber: "42424242908904"
+                      cvv: "012"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          description: Reserva não encontrada ou VCN não encontrado.
+        "500":
+          $ref: "#/components/responses/500"
+components:
+  schemas:
+    CreateVCNRequest:
+      allOf:
+        - type: object
+          required:
+            - vcnTimestamp
+            - vcnCreditLimit
+            - vcnCreditLimitCurrencyCode
+            - vcnCardHolderName
+            - vcnActivationDate
+            - vcnExpirationDate
+            - orderLocator
+            - orderRequestorName
+            - orderRequestorCPF
+            - orderRequestorPhone
+            - orderRequestorEmail
+            - orderRequestorAddress
+            - orderRequestorZipCode
+            - orderRequestorDistrict
+            - orderRequestorCity
+            - orderRequestorState
+            - orderRequestorCountryCode
+          properties:
+            echoToken:
+              description: Identificação da requisição. O mesmo valor será retornado no
+                atributo do response.
+              type: string
+            vcnTimestamp:
+              description: "Data da criação da requisição: YYYY-MM-DDThh:mm:ss.sTZD."
+              type: string
+              format: date-time
+            vcnCreditLimit:
+              description: ""
+              type: number
+            vcnCreditLimitCurrencyCode:
+              description: Moeda do limite do cartão. Código alpha padrão ISO 4217
+              type: string
+            vcnCardHolderName:
+              description: Nome do portador no cartão.
+              type: string
+            vcnActivationDate:
+              description: Data de ativação do cartão. Máximo é a data de expiração do cartão,
+                ou um ano no futuro.
+              type: string
+              format: date-time
+            vcnExpirationDate:
+              description: Data de fim de validade do uso do cartão. Máximo é um ano no
+                futuro, a contar da data da criação do VCN.
+              type: string
+              format: date-time
+            orderLocator:
+              description: Código da solicitação/ requisição
+              type: string
+            orderRequestorName:
+              description: Nome do solicitante.
+              type: string
+            orderRequestorCPF:
+              description: CPF do solicitante
+              type: string
+            orderRequestorPhone:
+              description: Número do telefone do solicitante.
+              type: string
+            orderRequestorEmail:
+              description: Endereço de e-mail do solicitante.
+              type: string
+            orderRequestorAddress:
+              description: Endereço do solicitante.
+              type: string
+            orderRequestorZipCode:
+              description: CEP do endereço.
+              type: string
+            orderRequestorDistrict:
+              description: Nome do bairro do enreceço.
+              type: string
+            orderRequestorCity:
+              description: Cidade do endereço.
+              type: string
+            orderRequestorState:
+              description: Estado (UF) do endereço.
+              type: string
+            orderRequestorCountryCode:
+              description: Código do país (ISO 3166).
+              type: string
+            orderRequestorRegistration:
+              description: Matrícula do solicitante
+              type: string
+            orderDepartment:
+              description: Departamento
+              type: string
+            orderCostCenterCode:
+              description: Código do centro de custo
+              type: string
+            orderCostCenterDescription:
+              description: Centro de custo
+              type: string
+            orderLedgerAccountCode:
+              description: Código da conta contábil
+              type: string
+            orderLedgerAccountDescription:
+              description: Descrição da conta contábil
+              type: string
+            orderProjectCode:
+              description: Código do projeto
+              type: string
+            orderProjectDescription:
+              description: Descrição do projeto
+              type: string
+            orderCustomField1:
+              description: Campo customizado 1
+              type: string
+            orderCustomField2:
+              description: Campo customizado 2
+              type: string
+            orderCustomField3:
+              description: Campo customizado 3
+              type: string
+            orderCustomField4:
+              description: Campo customizado 4
+              type: string
+            orderCustomField5:
+              description: Campo customizado 5
+              type: string
+        - oneOf:
+            - type: object
+              required:
+                - hotelReservationLocator
+                - hotelReservationStartDate
+                - hotelReservationEndDate
+                - hotelVat
+                - hotelPhone
+                - hotelAddress
+                - hotelCity
+                - hotelCountryCode
+                - hoteGuestFirstName
+                - hotelGuestLastName
+                - hotelName
+                - hotelTotalPriceValue
+                - hotelTotalPriceCurrencyCode
+                - hotelTaxesTotalValue
+                - hotelTaxesCurrencyCode
+              properties:
+                hotelReservationLocator:
+                  description: Código localizador da reserva de hospedagem.
+                  type: string
+                hotelReservationStartDate:
+                  description: "Checkin. Data inicial da hospedagem: YYYY-MM-DD."
+                  type: string
+                  format: date
+                hotelReservationEndDate:
+                  description: "Checkout. Data final da hospedagem: YYYY-MM-DD."
+                  type: string
+                  format: date
+                hotelVat:
+                  description: CNPJ do fornecedor.
+                  type: string
+                hotelPhone:
+                  description: Número do telefone do fornecedor.
+                  type: string
+                hotelEmail:
+                  description: Endereço de e-mail do fornecedor.
+                  type: string
+                  format: email
+                hotelAddress:
+                  description: Endereço do fornecedor.
+                  type: string
+                hotelZipCode:
+                  description: CEP do endereço.
+                  type: string
+                hotelDistrict:
+                  description: Nome do bairro do endereço.
+                  type: string
+                hotelCity:
+                  description: Cidade do endereço.
+                  type: string
+                hotelState:
+                  description: Estado (UF) do endereço.
+                  type: string
+                hotelCountryCode:
+                  description: Código do país (ISO 3166).
+                  type: string
+                hotelGuestFirstName:
+                  description: Primeiro nome do hóspede da hospedagem.
+                  type: string
+                hotelGuestLastName:
+                  description: Sobrenome do hóspede da hospedagem.
+                  type: string
+                hotelGuestPhone:
+                  description: Número do telefone do viajante.
+                  type: string
+                hotelGuestEmail:
+                  description: Endereço de e-mail do viajante.
+                  type: string
+                  format: email
+                hotelName:
+                  description: Nome da unidade habitacional.
+                  type: string
+                hotelTotalPriceValue:
+                  description: Valor da soma das diárias da hospedagem, excluindo taxas e extras.
+                  type: number
+                hotelTotalPriceCurrencyCode:
+                  description: Moeda da tarifa. Código alpha padrão ISO 4217
+                  type: string
+                hotelRateName:
+                  description: Nome da tarifa.
+                  type: string
+                hotelRateCode:
+                  description: Código da tarifa.
+                  type: string
+                hotelRateOccupancy:
+                  description: 'Capacidade do apartamento. Opções: ""SGL"", ""DBL"", ""TPL"".'
+                  type: string
+                hotelRateBoard:
+                  description: 'Tipo de pensão disponível para a tarifa. Exemplo: ""Café da
+                    manhã"", ""Meia pensão"".'
+                  type: string
+                hotelTaxesTotalValue:
+                  description: Valor total das taxas da hospedagem.
+                  type: number
+                hotelTaxesCurrencyCode:
+                  description: Moeda da taxa. Código alpha padrão ISO 4217
+                  type: string
+                hotelExtrasTotalValue:
+                  description: Valor total das taxas da hospedagem.
+                  type: number
+                hotelExtrasCurrencyCode:
+                  description: Moeda da taxa. Código alpha padrão ISO 4217
+                  type: string
+                hotelComments:
+                  description: Comentários
+                  type: string
+                hotelCustomField1:
+                  description: Campo customizado 1
+                  type: string
+                hotelCustomField2:
+                  description: Campo customizado 2
+                  type: string
+                hotelCustomField3:
+                  description: Campo customizado 3
+                  type: string
+                hotelCustomField4:
+                  description: Campo customizado 4
+                  type: string
+                hotelCustomField5:
+                  description: Campo customizado 5
+                  type: string
+            - type: object
+              required:
+                - flightPaxFirstName
+                - flightPaxLastName
+                - flightTicketNum
+                - flightTicketIssueDate
+                - flightIataTravelAgencyCode
+                - flightTravelAgencyName
+                - flightTotalFareValue
+                - flightTotalFareCurrencyCode
+                - flightTotalTaxValue
+                - flightTotalTaxCurrencyCode
+                - flightLegsDescription
+                - flightIsDomestic
+                - flightPnrRecordLocator
+                - flightFinalDestinationCity
+                - flightTmcIsMerchant
+                - flightStartDate
+                - flightEndDate
+              properties:
+                flightPaxFirstName:
+                  description: Nome do passageiro.
+                  type: string
+                flightPaxLastName:
+                  description: Sobrenome do passageiro.
+                  type: string
+                flightTicketNum:
+                  description: Número do bilhete.
+                  type: string
+                flightTicketIssueDate:
+                  description: "Data da emissão do bilhete: YYYY-MM-DD."
+                  type: string
+                  format: date
+                flightIataTravelAgencyCode:
+                  description: Código Iata da agência de viagem (8 caracteres numéricos).
+                  type: string
+                flightTravelAgencyName:
+                  description: Nome da agência de viagem.
+                  type: string
+                flightTotalFareValue:
+                  description: Valor da tarifa (soma de todos os voos)
+                  type: number
+                flightTotalFareCurrencyCode:
+                  description: Moeda da tarifa. Código alpha padrão ISO 4217
+                  type: string
+                flightTotalFeeValue:
+                  description: Valor do fee (soma de todos os voos)
+                  type: number
+                flightTotalFeeCurrencyCode:
+                  description: Moeda do fee. Código alpha padrão ISO 4217
+                  type: string
+                flightTotalTaxValue:
+                  description: Valor da taxa de embarque (soma de todos os voos)
+                  type: number
+                flightTotalTaxCurrencyCode:
+                  description: Moeda da taxa. Código alpha padrão ISO 4217
+                  type: string
+                flightLegsDescription:
+                  description: "Trecho completo do bilhete, exemplo: POA/GRU/SSA/REC/GRU/POA"
+                  type: string
+                flightIsDomestic:
+                  description: 'Indicador de bilhete doméstico: ""true"" ou ""false"".'
+                  type: boolean
+                flightPnrRecordLocator:
+                  description: Código localizador da reserva do bilhete.
+                  type: string
+                flightFinalDestinationCity:
+                  description: Código Iata da cidade de destino do bilhete (3 caracteres alpha).
+                  type: string
+                flightTmcIsMerchant:
+                  description: 'Indicador se a agência de viagem é o estabelecimento: ""true"" ou
+                    ""false"".'
+                  type: boolean
+                flightStartDate:
+                  description: Data da partida do primeiro voo
+                  type: string
+                  format: date-time
+                flightEndDate:
+                  description: Data da partida do último voo
+                  type: string
+                  format: date-time
+                flightComments:
+                  description: Comentários
+                  type: string
+                flightCustomField1:
+                  description: Campo customizado 1
+                  type: string
+                flightCustomField2:
+                  description: Campo customizado 2
+                  type: string
+                flightCustomField3:
+                  description: Campo customizado 3
+                  type: string
+                flightCustomField4:
+                  description: Campo customizado 4
+                  type: string
+                flightCustomField5:
+                  description: Campo customizado 5
+                  type: string
+                flights:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - flightCarrierCode
+                      - flightDepartureDate
+                      - flightServiceClass
+                      - flightOriginIata
+                      - flightDestinationIata
+                      - flightFareBaseCode
+                      - flightFlightNum
+                      - flightDepartureTime
+                      - flightArrivalDate
+                      - flightArrivalTime
+                      - flightFareValue
+                      - flightFareCurrencyCode
+                      - flightTaxValue
+                      - flightTaxCurrencyCode
+                    properties:
+                      flightCarrierCode:
+                        description: Código da cia aérea (2 caracteres alpha).
+                        type: string
+                      flightDepartureDate:
+                        description: "Data do embarque: YYYY-MM-DD."
+                        type: string
+                        format: date
+                      flightServiceClass:
+                        description: Indicador da classe de serviço do trecho
+                        type: string
+                      flightOriginIata:
+                        description: Código Iata da cidade de origem do trecho (3 caracteres alpha)
+                        type: string
+                      flightDestinationIata:
+                        description: Código Iata da cidade de destino do trecho (3 caracteres alpha)
+                        type: string
+                      flightFareBaseCode:
+                        description: Base tarifária
+                        type: string
+                      flightFlightNum:
+                        description: Número do vôo
+                        type: string
+                      flightDepartureTime:
+                        description: Hora do embarque (formato hh:mm:ss)
+                        type: string
+                        format: time
+                      flightArrivalDate:
+                        description: "Data do embarque: YYYY-MM-DD."
+                        type: string
+                        format: date
+                      flightArrivalTime:
+                        description: Hora do desembarque (formado hh:mm:ss)
+                        type: string
+                        format: time
+                      flightFareValue:
+                        description: Valor da tarifa do voo.
+                        type: number
+                      flightFareCurrencyCode:
+                        description: Moeda da tarifa. Código alpha padrão ISO 4217
+                        type: string
+                      flightFeeValue:
+                        description: Valor do fee do voo.
+                        type: number
+                      flightFeeCurrencyCode:
+                        description: Moeda do fee. Código alpha padrão ISO 4217
+                        type: string
+                      flightTaxValue:
+                        description: Valor da taxa de embarque do voo.
+                        type: number
+                      flightTaxCurrencyCode:
+                        description: Moeda da taxa. Código alpha padrão ISO 4217
+                        type: string
+            - type: object
+              required:
+                - rentalAgreement
+                - rentalLocator
+                - rentalCompanyCountryCode
+                - rentalVehicleClass
+                - rentalPickupDate
+                - rentalPickupCity
+                - rentalPickupCountryCode
+                - rentalPickupLocation
+                - rentalDropoffDate
+                - rentalDropoffCity
+                - rentalDropoffCountryCode
+                - rentalDropoffLocation
+                - rentalPeriodType
+                - rentalTotalPriceValue
+                - rentalTotalPriceCurrencyCode
+                - rentalTaxesValue
+                - rentalTaxesCurrencyCode
+              properties:
+                rentalAgreement:
+                  description: Número do contrato de locação.
+                  type: string
+                rentalLocator:
+                  description: Código localizador da reserva de locação.
+                  type: string
+                rentalCompanyName:
+                  description: Nome do fornecedor.
+                  type: string
+                rentalCompanyVat:
+                  description: CNPJ do fornecedor.
+                  type: string
+                rentalCompanyPhone:
+                  description: Número do telefone do fornecedor.
+                  type: string
+                rentalCompanyEmail:
+                  description: Endereço de e-mail do fornecedor.
+                  type: string
+                rentalCompanyAddress:
+                  description: Endereço do fornecedor.
+                  type: string
+                rentalCompanyZipCode:
+                  description: CEP do endereço.
+                  type: string
+                rentalCompanyDistrict:
+                  description: Nome do bairro do endereço.
+                  type: string
+                rentalCompanyState:
+                  description: Estado (UF) do endereço.
+                  type: string
+                rentalCompanyCity:
+                  description: Cidade do endereço.
+                  type: string
+                rentalCompanyCountryCode:
+                  description: Código do país (ISO 3166).
+                  type: string
+                rentalRenterName:
+                  description: Nome do usuário da locação.
+                  type: string
+                rentalRenterSurname:
+                  description: Sobrenome do usuário da locação.
+                  type: string
+                rentalVehicleClass:
+                  description: Nome da categoria do veículo.
+                  type: string
+                rentalVehicleModel:
+                  description: Modelo do Veículo
+                  type: string
+                rentalVehicleDescription:
+                  description: Descrição do veículo da locação.
+                  type: string
+                rentalVehicleColor:
+                  description: Cor do veículo
+                  type: string
+                rentalVehicleLicense:
+                  description: Placa do veículo
+                  type: string
+                rentalPickupDate:
+                  description: Data e hora da locação. YYYY-MM-DDTHH:MM:SSZ.
+                  type: string
+                  format: date-time
+                rentalPickupCity:
+                  description: Código da cidade onde o veículo será locado.
+                  type: string
+                rentalPickupCountryCode:
+                  description: Código do país (ISO 3166).
+                  type: string
+                rentalPickupLocation:
+                  description: Local onde o veículo será retirado.
+                  type: string
+                rentalDropoffDate:
+                  description: Data e hora da devolução. YYYY-MM-DDTHH:MM:SSZ.
+                  type: string
+                  format: date-time
+                rentalDropoffCity:
+                  description: Código da cidade onde o veículo será devolvido.
+                  type: string
+                rentalDropoffCountryCode:
+                  description: Código do país (ISO 3166).
+                  type: string
+                rentalDropoffLocation:
+                  description: Local onde o veículo será devolvido.
+                  type: string
+                rentalPeriodType:
+                  description: "Tipo de período da locação. Valores possíveis: D = Diário W =
+                    Semanal M = Mensal."
+                  type: string
+                rentalTotalPriceValue:
+                  description: Valor total da tarifa da locação, excluindo taxas.
+                  type: number
+                rentalTotalPriceCurrencyCode:
+                  description: Moeda da tarifa. Código alpha padrão ISO 4217
+                  type: string
+                rentalTaxesValue:
+                  description: Valor total das taxas da locação.
+                  type: number
+                rentalTaxesCurrencyCode:
+                  description: Moeda da taxa. Código alpha padrão ISO 4217
+                  type: string
+                rentalComments:
+                  description: Comentários
+                  type: string
+                rentalCustomField1:
+                  description: Campo customizado 1
+                  type: string
+                rentalCustomField2:
+                  description: Campo customizado 2
+                  type: string
+                rentalCustomField3:
+                  description: Campo customizado 3
+                  type: string
+                rentalCustomField4:
+                  description: Campo customizado 4
+                  type: string
+                rentalCustomField5:
+                  description: Campo customizado 5
+                  type: string
+    CreateVCNResponse:
+      type: object
+      properties:
+        echoToken:
+          type: string
+        vcnId:
+          type: string
+          example: BAGABAG
+          description: Identificador do VCN. Utilizado para recuperar os dados do VCN a
+            partir de Token e cancelamento do VCN.
+        vcnStatus:
+          type: string
+          description: Status do VCN
+          enum:
+            - VALID
+            - CANCELLED
+          example: VALID
+        vcnDescription:
+          type: string
+          description: Descrição do VCN
+        creditCard:
+          type: object
+          description: Dados do VCN
+          readOnly: true
+          properties:
+            cardTypeCode:
+              type: string
+              example: MASTERCARD
+              description: Bandeira do cartão de crédito
+            expireDate:
+              type: string
+              example: "0820"
+              description: Data de expiração do cartão (formato MMAA)
+            cardHolderName:
+              type: string
+              example: Frank Castle
+              description: Nome do portador do cartão
+            cardNumber:
+              type: string
+              example: "42424242908904"
+              description: Número do VCN gerado
+            cvv:
+              type: string
+              format: date
+              example: "012"
+              description: Código de segurança do cartão
+    UpdateVCNRequest:
+      allOf:
+        - $ref: "#/components/schemas/CreateVCNRequest"
+    UpdateVCNResponse:
+      type: object
+      properties:
+        echoToken:
+          type: string
+    CancelVCNResponse:
+      type: object
+      properties:
+        echoToken:
+          type: string
+    ReceiveLostReservationRequest:
+      type: object
+      required:
+        - sessionUrl
+        - sessionId
+        - sessionDate
+        - hotelId
+        - hotelReservationStartDate
+        - hotelReservationEndDate
+      properties:
+        sessionUrl:
+          type: string
+          example: https://book.omnibees.com/bookdetails?CheckIn=08032021&CheckOut=10032021&NRooms=1&ad=2&ag=&ch=0&lang=pt-BR&q=12709&rateuids=250694&roomuids=76153&sid=poxwpt
+        sessionId:
+          type: string
+        sessionDate:
+          type: string
+          format: date-time
+        sessionIP:
+          type: string
+          example: 10.10.10.10
+        sessionDeviceType:
+          type: string
+          enum:
+            - desktop
+            - mobile
+            - tablet
+        sessionSource:
+          description: de onde veio o utilizador que não concluiu a reserva.
+          type: string
+        hotelId:
+          description: ID do Hotel no formato HOTEL_OMNI_123
+          type: string
+          example: HOTEL_OMNI_123
+        hotelName:
+          type: string
+        hotelChainName:
+          type: string
+        buyerId:
+          description: ID do cliente
+          type: string
+        buyerEmail:
+          description: E-mail do cliente
+          type: string
+          format: email
+        buyerPhone:
+          description: Telefone do cliente
+          type: string
+        buyerLanguage:
+          description: Idioma do comprador, no formato ISO 639-1, com região opcional
+          example: pt_BR
+          type: string
+        buyerRemarketingEnabled:
+          description: Serviço Re.Marketing atiivo ( S/ N) este serviço envia um e-mail ao
+            cliente caso ele não conclua a reserva )
+          type: boolean
+        buyerRemarketingExpirationDate:
+          description: Tempo definido no Remarkting para envio
+          type: string
+          format: date-time
+        buyerRemarketingCookiesDenied:
+          description: Flag para quem não aceita os "cookies" para não disparar o e-mail
+          type: boolean
+        buyerPurchased:
+          description: Cliente já comprou ( ver parâmetro que indica se uma reserva foi
+            originada por um e-mail de reserva perdida)
+          type: boolean
+        hotelReservationLocator:
+          description: Código localizador da reserva de hospedagem.
+          example: RES000000001-123
+          type: string
+        hotelReservationStartDate:
+          description: "Checkin. Data inicial da hospedagem: YYYY-MM-DD. Quando houver uma
+            pesquisa >1 quarto e que tenha definido datas e/ou ocupação
+            diferente por quarto, essa informação deverá ser distribuída nos
+            quartos. Neste cenário as datas da reserva deverão abranger o
+            checkin mais cedo e o checkout mais tarde, abrangendo o maior
+            período."
+          type: string
+          format: date
+        hotelReservationEndDate:
+          description: "Checkout. Data final da hospedagem: YYYY-MM-DD. Quando houver uma
+            pesquisa >1 quarto e que tenha definido datas e/ou ocupação
+            diferente por quarto, essa informação deverá ser distribuída nos
+            quartos. Neste cenário as datas da reserva deverão abranger o
+            checkin mais cedo e o checkout mais tarde, abrangendo o maior
+            período."
+          type: string
+          format: date
+        hotelTotalPriceValue:
+          description: Valor da soma das diárias da hospedagem, excluindo taxas e extras.
+          example: 123.45
+          type: number
+        hotelTotalPriceCurrencyCode:
+          description: Moeda da tarifa. Código alpha padrão ISO 4217
+          example: BRL
+          type: string
+        hotelRoomCount:
+          description: Número de quartos.
+          example: 2
+          type: number
+        hotelOccupancyAdultsCount:
+          description: Número de adultos. Para reservas de múltiplos quartos, somar todos
+            os adultos.
+          example: 2
+          type: number
+        hotelOccupancyChildrenCount:
+          description: Número total de crianças. Para reservas de múltiplos quartos, somar
+            todas as crianças.
+          example: 2
+          type: number
+        hotelOccupancyChildrenAges:
+          description: Idades das crianças
+          example:
+            - 10
+            - 2
+          type: array
+          items:
+            type: number
+        hotelGuestFirstName:
+          description: Primeiro nome do hóspede da hospedagem.
+          type: string
+        hotelGuestLastName:
+          description: Sobrenome do hóspede da hospedagem.
+          type: string
+        hotelGuestPhone:
+          description: Número do telefone do viajante.
+          type: string
+        hotelGuestEmail:
+          description: Endereço de e-mail do viajante.
+          type: string
+          format: email
+        hotelGuestAddress:
+          description: Endereço do viajante.
+          type: string
+        hotelGuestZipCode:
+          description: CEP do endereço do viajante.
+          type: string
+        hotelGuestDistrict:
+          description: Nome do bairro do viajante.
+          type: string
+        hotelGuestCity:
+          description: Cidade do viajante.
+          type: string
+        hotelGuestState:
+          description: Estado (UF) do viajante.
+          type: string
+        hotelGuestCountryCode:
+          description: Código do país (ISO 3166) do viajante.
+          type: string
+        hotelRooms:
+          type: array
+          items:
+            type: object
+            required:
+              - roomStartDate
+              - roomEndDate
+              - roomOccupancyAdultsCount
+              - roomOccupancyChildrenCount
+            properties:
+              roomTypeId:
+                description: Id do tipo de quarto
+                type: string
+              roomTypeName:
+                description: Nome do Quarto (Produtos do Hotel)
+                type: string
+              roomRateId:
+                description: ID da Tarifa (Produtos do Hotel)
+                type: string
+              roomRateName:
+                description: Nome Comercial da Tarifa
+                type: string
+              roomTotalPriceValue:
+                description: Valor do Quarto
+                type: number
+                example: 123.45
+              roomTotalPriceCurrencyCode:
+                description: Moeda do valor
+                type: number
+                example: BRL
+              roomStartDate:
+                description: Data de check-in
+                type: string
+                format: date
+              roomEndDate:
+                description: Data de check-out
+                type: string
+                format: date
+              roomOccupancyAdultsCount:
+                description: Número de adultos. Para reservas de múltiplos quartos, somar todos
+                  os adultos.
+                example: 2
+                type: number
+              roomOccupancyChildrenCount:
+                description: Número total de crianças. Para reservas de múltiplos quartos, somar
+                  todas as crianças.
+                example: 2
+                type: number
+              roomOccupancyChildrenAges:
+                description: Idades das crianças
+                example:
+                  - 10
+                  - 2
+                type: array
+                items:
+                  type: number
+              roomGuests:
+                description: Hóspedes do quarto
+                type: array
+                items:
+                  type: object
+                  properties:
+                    guestFirstName:
+                      description: Primeiro nome do hóspede.
+                      type: string
+                    guestLastName:
+                      description: Sobrenome do hóspede.
+                      type: string
+                    guestAgeQualifier:
+                      description: Se é adulto ou criança
+                      example: ADT
+                      type: string
+                      enum:
+                        - CHD
+                        - ADT
+                    guestAge:
+                      description: Idade do hóspede - obrigatório se criança
+                      type: number
+        hotelExtras:
+          description: Extras
+          type: array
+          items:
+            type: object
+            properties:
+              extraId:
+                description: Id dos Extras Extras (Produtos do Hotel)
+                type: string
+              extraName:
+                description: Nome Extra ( Identifcar quando for tipo regime alimentar)
+                type: string
+        hotelPolicies:
+          description: Políticas
+          type: array
+          items:
+            type: object
+            properties:
+              policyId:
+                description: id da política
+                type: string
+              policyName:
+                description: Nome da Politica e Condições ( Cancelamento, Garantia)
+                type: string
+        hotelPaymentOptionId:
+          description: Opção de pagamento selecionada
+          type: string
+        hotelPaymentOptionName:
+          description: Opção de pagamento selecionada
+          type: string
+        hotelSpecialRequests:
+          description: Pedidos especiais
+          type: string
+        hotelTransfers:
+          description: Transfers
+          type: string
+        loyaltyCard:
+          description: Loyalty Card
+          type: string
+    Currency:
+      type: string
+      enum:
+        - BRL
+        - USD
+        - EUR
+      example: BRL
+    Price:
+      type: object
+      required:
+        - value
+        - currency
+      properties:
+        value:
+          type: number
+          example: 160.5
+        currency:
+          $ref: "#/components/schemas/Currency"
+    Reservation:
+      type: object
+      required:
+        - service
+        - traveller
+      properties:
+        locator:
+          type: string
+          example: RES0123456-10
+          description: Localizador da reserva (visível para o viajante/agente de viagem)
+        refCode:
+          type: string
+          example: 12f031-c93480a-ckdsj49102
+          description: Referência externa. Gerada pelo sistema de origem da requisição
+            (por exemplo, um ID do pedido ou transação).
+        tags:
+          type: array
+          items:
+            type: string
+          example:
+            - CC1234
+            - RH
+            - ENG
+          description: Marcadores gerenciais.
+        createdBy:
+          type: string
+          example: john.smith
+          description: Nome do usuário ou email do emissor.
+        createdByName:
+          type: string
+          example: John Smith
+          description: Nome do emissor.
+        vcn:
+          type: object
+          description: Valor da reserva a ser paga com o VCN
+          required:
+            - total
+          properties:
+            output:
+              type: string
+              description: "Tipo de saída do VCN: `TOKEN` para retornar token, `DEFAULT` para
+                retornar os dados do cartão de crédito."
+              enum:
+                - TOKEN
+                - DEFAULT
+            total:
+              $ref: "#/components/schemas/Price"
+        traveller:
+          type: object
+          description: Dados do viajante principal
+          required:
+            - firstName
+            - lastName
+          properties:
+            firstName:
+              type: string
+              example: Frank
+              description: Nome do viajante. Constará no campo CARD HOLDER NAME do VCN gerado.
+                Caracteres numéricos ou especiais serão ignorados.
+            lastName:
+              type: string
+              example: Castle
+              description: Sobrenome do viajante. Constará no campo CARD HOLDER NAME do VCN
+                gerado. Caracteres numéricos ou especiais serão ignorados.
+            email:
+              type: string
+              example: fcastle@example.com
+              description: E-mail do viajante.
+            rg:
+              type: string
+              example: 55.555.555-5
+              description: Documento RH do viajante.
+            cpf:
+              type: string
+              example: 555.555.555-55
+              description: Documento CPF do viajante.
+            department:
+              type: string
+              example: RH
+              description: Departamento a que pertence o viajante
+            registration:
+              type: string
+              example: "54321"
+              description: Matrícula ou código de identificação do viajante.
+        service:
+          type: object
+          description: Detalhes sobre o serviço que será pago pelo VCN
+          required:
+            - startDate
+            - endDate
+            - penaltyDate
+          properties:
+            productId:
+              type: string
+              example: HOTEL_OMNI_1054
+              description: Id do hotel. Aceitamos HOTEL_OMNI_XXXX (Omnibees) e HOTEL_TRND_XXXX
+                (Trend).
+            productName:
+              type: string
+              example: Blue Tree Premium Morumbi
+              description: Nome do hotel
+            cityName:
+              type: string
+              example: São Paulo
+              description: Nome da cidade do hotel
+            startDate:
+              type: string
+              format: date
+              example: 2019-05-14
+              description: Start of Service Date (check-in)
+            endDate:
+              type: string
+              format: date
+              example: 2019-05-14
+              description: End of Service Date (check-out)
+            penaltyDate:
+              type: string
+              format: date
+              example: 2019-05-14
+              description: Data de penalidade. Usado quando existirem regras de data de
+                ativação/expiração baseadas na data de penalidade da reserva.
+            countryCode:
+              type: string
+              example: BR
+              description: Código do país de destino (ISO 3166-1 alpha-2). Usado por motor de
+                regras de ativação/expiração.
+            roomType:
+              type: string
+              example: Single
+              description: Tipo do quarto ou apartamento.
+            costCenterCode:
+              type: string
+              example: "1030"
+              description: Código de identificação do centro de custo.
+            costCenterDescription:
+              type: string
+              example: Inovação
+              description: Descrição do centro de custo.
+            companyCode:
+              type: string
+              example: "206077"
+              description: Código de identificação da empresa ou cliente
+            companyName:
+              type: string
+              example: CompanyABC
+              description: Nome da empresa ou cliente
+            ledgerAccountCode:
+              type: string
+              example: "40901"
+              description: Código de identificação da conta contábil
+            ledgerAccountDescription:
+              type: string
+              example: Investimentos
+              description: Descrição da conta contábil
+            projectCode:
+              type: string
+              example: "358"
+              description: Código de identificação do projeto.
+            projectDescription:
+              type: string
+              example: NewProdXYZ
+              description: Descrição do projeto.
+    ReservationResponse:
+      type: object
+      properties:
+        reservationId:
+          type: string
+          description: Id da reserva, gerada pela Niara
+          readOnly: true
+          example: BTGBZZP
+        locator:
+          type: string
+          example: RES0123456-10
+          description: Localizador da reserva
+        refCode:
+          type: string
+          example: 12f031-c93480a-ckdsj49102
+          description: Referência externa. Gerada pelo sistema de origem da requisição
+            (por exemplo, um ID do pedido ou transação).
+        status:
+          type: string
+          description: Status da reserva
+          example: CONFIRMED
+          enum:
+            - CANCELLED
+            - REJECTED
+            - UNCONFIRMED
+            - PRE_RESERVATION
+            - PROCESSING
+            - CONFIRMED
+        service:
+          type: object
+          description: Detalhes sobre o serviço
+          properties:
+            productId:
+              type: string
+              example: HOTEL_OMNI_1054
+              description: Id do hotel. Aceitamos HOTEL_OMNI_XXXX (Omnibees) e HOTEL_TRND_XXXX
+                (Trend).
+            productName:
+              type: string
+              example: Blue Tree Premium Morumbi
+              description: Nome do hotel
+            cityName:
+              type: string
+              example: São Paulo
+              description: Nome da cidade do hotel
+            startDate:
+              type: string
+              format: date
+              example: 2019-05-14
+              description: Start of Service Date (check-in)
+            endDate:
+              type: string
+              format: date
+              example: 2019-05-14
+              description: End of Service Date (check-out)
+            penaltyDate:
+              type: string
+              format: date
+              example: 2019-05-14
+              description: Data de penalidade. Usado quando existirem regras de data de
+                ativação/expiração baseadas na data de penalidade da reserva.
+    WithCreditCardToken:
+      type: object
+      properties:
+        creditCard:
+          type: object
+          description: Dados do VCN gerado pela API (apenas retorno)
+          readOnly: true
+          properties:
+            token:
+              type: string
+              description: Token que deve ser armazenado pelo cliente. É necessário para
+                consultar os dados do cartão de crédito posteriormente.
+              example: KN7e2m4TFWtPEHjuhcKwRXqIQyUigWliof0bhuAzAF8v75VYBL3kySRQsFX4CT5aGbgNXgrLdXildPR+cpToiKWvQcMiMRk+AaRyzYIO8FbxDJDLsGUlfY5+EY3ynItvONmOxqS0zPrhK1FM24ahWt32MNymWHcWXjTU5dfRcVLrLavYSRxfg0JKfOFqBE49
+    WithCreditCard:
+      type: object
+      properties:
+        creditCard:
+          type: object
+          description: Dados do VCN gerado pela API (apenas retorno)
+          readOnly: true
+          properties:
+            cardTypeCode:
+              type: string
+              example: MASTERCARD
+              description: Bandeira do cartão de crédito
+            expireDate:
+              type: string
+              example: "0820"
+              description: Data de expiração do cartão (formato MMAA)
+            cardHolderName:
+              type: string
+              example: Frank Castle
+              description: Nome do portador do cartão
+            cardNumber:
+              type: string
+              example: "42424242908904"
+              description: Número do VCN gerado
+            cvv:
+              type: string
+              format: date
+              example: "012"
+              description: Código de segurança do cartão
+    ReservationWithCreditCardResponse:
+      allOf:
+        - $ref: "#/components/schemas/ReservationResponse"
+        - $ref: "#/components/schemas/WithCreditCard"
+    ReservationWithCreditCardTokenResponse:
+      allOf:
+        - $ref: "#/components/schemas/ReservationResponse"
+        - $ref: "#/components/schemas/WithCreditCardToken"
+    ExtraVcnRequest:
+      type: object
+      required:
+        - total
+        - activationDate
+        - expirationDate
+      properties:
+        output:
+          type: string
+          description: "Tipo de saída do VCN: `TOKEN` para retornar token, `DEFAULT` para
+            retornar os dados do cartão de crédito."
+          enum:
+            - TOKEN
+            - DEFAULT
+        total:
+          $ref: "#/components/schemas/Price"
+        activationDate:
+          type: string
+          format: date
+          example: 2020-05-14
+          description: >
+            Data de ativação do VCN. Tentativas de uso do VCN feitas antes desta
+            data serão rejeitadas. Obrigatoriamente precisa ser uma data igual
+            ou maior que a data da criação do VCN.
+        expirationDate:
+          type: string
+          format: date
+          example: 2020-06-14
+          description: >
+            Data de expiração do VCN. A partir desta data, transações no VCN
+            serão rejeitadas. Não correponde, necessariamente,  à data de
+            validade impressa do cartão, utilizada em transações.
+        description:
+          type: string
+          description: Descrição para o VCN
+    Error:
+      properties:
+        message:
+          type: string
+          example: Forbidden
+  securitySchemes:
+    Bearer:
+      description: >-
+        Cada requisição precisa incluir o token de autenticação no cabeçalho
+        `Authorization`:
+
+
+        ```
+
+        Authorization: Bearer <token>
+
+        ```
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    "401":
+      description: Erro na autenticação - não foi enviado o token de autenticação.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            example:
+              value:
+                message: Unauthorized
+    "403":
+      description: Acesso negado - token de acesso inválido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            example:
+              value:
+                message: User is not authorized to access this resource with an explicit deny
+    "500":
+      description: Erro inesperado.
+security:
+  - Bearer: []

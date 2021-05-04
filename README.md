@@ -1,18 +1,73 @@
 # Bee2Pay VCN SDK - Niara
-SDK para utilização da API do Bee2Pay VCN, segundo a [Documentação](http://niara-api-docs.niara.tech/) do release  0.5.3 
+SDK para utilização da API do Bee2Pay VCN, segundo a [Documentação](http://niara-api-docs.niara.tech/) do release  0.6.1
 
+
+# VCN Endpoint
 
 ## Instanciando a classe
 Ao instanciar a classe é necessário informar o TOKEN de acesso
 
 ```php
-    $sdk = new Bee2Pay\Bee2PaySDK('YOUR_TOKEN'); // Production 
+    $sdk = new Bee2Pay\VirtualCardSDK('YOUR_TOKEN'); // Production 
+```
+
+## Criando um VCN
+
+```php
+//Request
+$request = new \Bee2Pay\Requests\VcnRequest();
+
+$request->setEchoToken('TOKEN RAND');
+$request->setVcnExpirationDate('2021-12-12');
+$request->setVcnActivationDate('2021-12-10');
+$request->setVcnCreditLimit(40);
+$request->setVcnCardHolderName('Hotel Teste2');
+$request->setVcnCreditLimitCurrencyCode('BRL');
+
+print_r($sdk->create('BAGABAG', $request));
+
+// Response
+stdClass Object
+(
+    [echoToken] => string
+    [vcnId] => BBBBBBB
+    [vcnStatus] => VALID
+    [vcnDescription] => string
+    [creditCard] => stdClass Object
+        (
+            [cardTypeCode] => MASTERCARD
+            [expireDate] => 0820
+            [cardHolderName] => Frank Castle
+            [cardNumber] => 00000000000000
+            [cvv] => 000
+        )
+)
+```
+
+## Atualizando um VCN
+Mesmo Request utilizado para criar, porém  utiliza o método `update`  passando o ID do VCN antes da request
+```php
+    $sdk->update('VCN_ID', $request);
+```
+
+## CANCELANDO um VCN
+Utiliza o método `cancel`  passando o ID do VCN 
+```php
+    $sdk->cancel('VCN_ID');
+```
+
+# Reservation Endpoint
+## Instanciando a classe
+Ao instanciar a classe é necessário informar o TOKEN de acesso
+
+```php
+    $sdk = new Bee2Pay\ReservationSDK('YOUR_TOKEN'); // Production 
 ```
 
 Caso deseje utilizar o ambiente de desekvilvimento, basta passar um booleano `false` ao instanciar a Classe
 
  ```php
-    $sdk = new Bee2Pay\Bee2PaySDK('YOUR_TOKEN', false); // Dev
+    $sdk = new Bee2Pay\ReservationSDK('YOUR_TOKEN', false); // Dev
 ```
 
 ## Criando um novo VCN

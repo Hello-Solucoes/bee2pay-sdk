@@ -4,6 +4,7 @@
 namespace Bee2Pay\Entities\BookingTypes;
 
 
+use Bee2Pay\Constants\BookingType;
 use Bee2Pay\Contracts\ValidBooking;
 
 class AirBooking implements ValidBooking
@@ -34,6 +35,11 @@ class AirBooking implements ValidBooking
     public $flightCustomField4;
     public $flightCustomField5;
     public $flights;
+
+    public function getType()
+    {
+        return BookingType::AIR;
+    }
 
     /**
      * @return mixed
