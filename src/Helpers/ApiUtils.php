@@ -37,7 +37,7 @@ class ApiUtils
     {
         $vars = get_object_vars($object);
         foreach ($vars as $key => $value) {
-            if (empty($object->$key)) {
+            if (empty($object->$key) && $object->$key != '0') {
                 unset($object->$key);
             } else if (is_object($object->$key)) {
                 $object->$key = self::removeNullFields($object->$key);
